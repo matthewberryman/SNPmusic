@@ -9,21 +9,18 @@ from mingus.midi import midi_file_out as MidiFileOut
 base_to_note_mapping = {
   'A': 'C',
   'G': 'E',
-  'C': 'F',
-  'T': 'G'
+  'C': 'G',
+  'T': 'B'
 }
 
 a_genotype = {'X': {}, 'Y': {}}
 b_genotype = {'X': {}}
 ref_genotype = {'X': {}, 'Y': {}}
 
-ref_instrument = MidiInstrument()
-a_instrument = MidiInstrument()
-b_instrument = MidiInstrument()
+ref_instrument = MidiInstrument('Acoustic Grand Piano')
+a_instrument = MidiInstrument('Shakuhachi')
+b_instrument = MidiInstrument('Electric Guitar')
 
-ref_instrument.midi_instr = 0
-a_instrument.midi_instr = 76
-b_instrument.midi_instr = 77
 
 ref_track = Track(ref_instrument)
 a_track = Track(a_instrument)
@@ -35,6 +32,7 @@ for i in range(1,23):
     b_genotype[str(i)]={}
     ref_genotype[str(i)]={}
 
+print('reading SNP data')
 with open(sys.argv[1], 'r') as file:
   for line in file:
     if not line.startswith('#'):
@@ -44,6 +42,7 @@ with open(sys.argv[1], 'r') as file:
         if not chromosome == 'Y' and len(genotype) == 2:
           b_genotype[str(chromosome)][pos] = genotype[1]
 
+print('reading reference human genome')
 for chromosome in a_genotype:
   filename = 'chr'+chromosome+'.fa'
   seq_record_count = 1
@@ -53,17 +52,26 @@ for chromosome in a_genotype:
     for pos in a_genotype[chromosome]:
       ref_genotype[chromosome][pos] = seq_record[int(pos)-1]
 
+print('turning into music')
+limit = 1024
+count = 0
 for chromosome in a_genotype:
+  if count > limit:
+    break
   for pos in a_genotype[chromosome]:
     try:
+      if count > limit:
+        break
       if a_genotype[chromosome][pos] in base_to_note_mapping and a_genotype[chromosome][pos] in base_to_note_mapping:
         ref_track + base_to_note_mapping[ref_genotype[chromosome][pos]]
         a_track + base_to_note_mapping[a_genotype[chromosome][pos]]
         b_track + base_to_note_mapping[b_genotype[chromosome][pos]]
+        count = count + 1
         #print(pos,ref_genotype[chromosome][pos],a_genotype[chromosome][pos],b_genotype[chromosome][pos])
     except KeyError:
         f = ''
 
+print('writing out midi file')
 c = Composition()
 
 c.set_author('Matthew Berryman', 'matthew@acrossthecloud.net')
